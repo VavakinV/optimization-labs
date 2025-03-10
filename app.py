@@ -218,7 +218,7 @@ def update_plot_and_table_simplex(n_clicks, x0, y0, x12, x22, x1x2, x1, x2, a1, 
     if None in [x0, y0, x12, x22, x1x2, x1, x2, a1, b1, c1, a2, b2, c2, type]:
         return go.Figure(), "Пожалуйста, заполните все поля", "", "danger"
     
-    return update_plot_and_table("simplex", simplex_method.objective_param([x12, x22, x1x2, x1, x2]), *simplex_method.optimize([x0, y0], [x12, x22, x1x2, x1, x2], [a1, b1, c1, a2, b2, c2], "minimize" if type=="Минимум" else "maximize"), [[a1, b1, c1, a2, b2, c2]])
+    return update_plot_and_table("simplex", simplex_method.objective_param([x12, x22, x1x2, x1, x2]), *simplex_method.optimize([x0, y0], [x12, x22, x1x2, x1, x2], [a1, b1, c1, a2, b2, c2] if (any([x != 0 for x in [a1, b1, c1]]) and any([x != 0 for x in [a2, b2, c2]])) else [a1, b1, c1] if (any([x != 0 for x in [a1, b1, c1]]) and all([x == 0 for x in [a2, b2, c2]])) else [a2, b2, c2] if (all([x == 0 for x in [a1, b1, c1]]) and any([x != 0 for x in [a2, b2, c2]])) else [], "minimize" if type=="Минимум" else "maximize"), [[a1, b1, c1, a2, b2, c2]])
 
 
 def update_plot_and_table(method, func, history, converged, status_message, options=None):
@@ -240,8 +240,8 @@ def update_plot_and_table(method, func, history, converged, status_message, opti
         result_message = "Не удалось выполнить оптимизацию"
         color = "danger"
     
-    x = np.linspace(-10, 10, 100)
-    y = np.linspace(-10, 10, 100)
+    x = np.linspace(0, 20, 100)
+    y = np.linspace(0, 20, 100)
     X, Y = np.meshgrid(x, y)
     Z = func(X, Y)
     
@@ -264,14 +264,15 @@ def update_plot_and_table(method, func, history, converged, status_message, opti
     if method == "simplex":
         a1, b1, c1, a2, b2, c2 = options[0]
         
-        func1 = lambda x1, x2: a1*x1 + b1*x2 - c1
-        Z1 = func1(X, Y)
+        if any([x !=0 for x in [a1, b1, c1]]):
+            func1 = lambda x1, x2: a1*x1 + b1*x2 - c1
+            Z1 = func1(X, Y)
+            fig.add_trace(go.Surface(x=X, y=Y, z=Z1, colorscale='Reds', opacity=0.4))
 
-        func2 = lambda x1, x2: a2*x1 + b2*x2 - c2
-        Z2 = func2(X, Y)
-        
-        fig.add_trace(go.Surface(x=X, y=Y, z=Z1, colorscale='Reds', opacity=0.2))
-        fig.add_trace(go.Surface(x=X, y=Y, z=Z2, colorscale='Blues', opacity=0.2))
+        if any([x != 0 for x in [a2, b2, c2]]):
+            func2 = lambda x1, x2: a2*x1 + b2*x2 - c2
+            Z2 = func2(X, Y)
+            fig.add_trace(go.Surface(x=X, y=Y, z=Z2, colorscale='Blues', opacity=0.4))
 
     fig.update_layout(
         scene=dict(
