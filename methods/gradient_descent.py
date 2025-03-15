@@ -25,6 +25,7 @@ def gradient(x, y, h=1e-5):
 
 def optimize(x0, y0, learning_rate=0.1, epsilon=1e-6, epsilon1=1e-6, epsilon2=1e-6, max_iter=100):
     history = []
+    optional_history = []
     current_point = np.array([x0, y0])
     
     for i in range(max_iter):   
@@ -41,11 +42,12 @@ def optimize(x0, y0, learning_rate=0.1, epsilon=1e-6, epsilon1=1e-6, epsilon2=1e
             'x': current_point[0],
             'y': current_point[1],
             'f_value': current_value,
-            'grad_norm': grad_norm
         })
+
+        optional_history.append({'grad_norm': grad_norm})
         
         if grad_norm < epsilon1:
-            return history, True, "Сошёлся (норма градиента меньше заданной точности)"
+            return history, True, "Сошёлся (норма градиента меньше заданной точности)", {'optional_history': optional_history}
         
         old_point = current_point 
         current_point = current_point - learning_rate * grad
@@ -62,6 +64,6 @@ def optimize(x0, y0, learning_rate=0.1, epsilon=1e-6, epsilon1=1e-6, epsilon2=1e
         #     current_point = old_point - modified_learning_rate * grad
 
         if (np.linalg.norm(current_point-old_point) < epsilon2) and (np.linalg.norm(func(*current_point)-func(*old_point)) < epsilon2):
-            return history, True, "Сошёлся (разница значений функции меньше заданной точности)" 
+            return history, True, "Сошёлся (разница значений функции меньше заданной точности)", {'optional_history': optional_history}
     
-    return history, False, "Не сошёлся (достигнуто максимальное количество итераций)"
+    return history, False, "Не сошёлся (достигнуто максимальное количество итераций)", {'optional_history': optional_history}
