@@ -16,7 +16,10 @@ methods = {
 }
 
 optimization_functions = {
-    "Функция Розенброка": "rosenbrock"
+    "Функция Розенброка": "rosenbrock",
+    "Функция Букина N6": "bukin",
+    "Функция Химмельблау": "himmelblau",
+    "Функция Изома": "isom"
 }
 
 app.layout = dbc.Container([
@@ -176,12 +179,13 @@ def update_params(method_name):
     elif method_name == "Генетический алгоритм":
         return html.Div([
             dbc.InputGroup([
-                dbc.InputGroupText("Количество хромосом"),
+                dbc.InputGroupText("Функция"),
                 dcc.Dropdown(
                         id="genetic-function-dropdown",
                         options=[{"label": name, "value": optimization_functions[name]} for name in optimization_functions.keys()],
                         value="rosenbrock",
-                        clearable=False
+                        clearable=False,
+                        style={'width': '100%'}
                     )
             ], className='mb-2'),
             
