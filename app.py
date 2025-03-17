@@ -187,39 +187,39 @@ def update_params(method_name):
             
             dbc.InputGroup([
                 dbc.InputGroupText("Количество хромосом"),
-                dbc.Input(id='genetic-chromosome-number-input', type='number', value=50)
+                dbc.Input(id='genetic-chromosome-number-input', type='number', value=1000)
             ], className='mb-2'),
 
             dbc.InputGroup([
                 dbc.InputGroupText("Макс. итераций"),
-                dbc.Input(id='genetic-max-iter-input', type='number', value=100)
+                dbc.Input(id='genetic-max-iter-input', type='number', value=25)
             ], className='mb-2'),
 
             dbc.InputGroup([
                 dbc.InputGroupText("Интервал поиска (x)"),
-                dbc.Input(id='genetic-x-min-input', type='number', value=-5, placeholder="Min x"),
-                dbc.Input(id='genetic-x-max-input', type='number', value=5, placeholder="Max x")
+                dbc.Input(id='genetic-x-min-input', type='number', value=-3, placeholder="Min x"),
+                dbc.Input(id='genetic-x-max-input', type='number', value=3, placeholder="Max x")
             ], className='mb-2'),
 
             dbc.InputGroup([
                 dbc.InputGroupText("Интервал поиска (y)"),
-                dbc.Input(id='genetic-y-min-input', type='number', value=-5, placeholder="Min y"),
-                dbc.Input(id='genetic-y-max-input', type='number', value=5, placeholder="Max y")
+                dbc.Input(id='genetic-y-min-input', type='number', value=-3, placeholder="Min y"),
+                dbc.Input(id='genetic-y-max-input', type='number', value=3, placeholder="Max y")
             ], className='mb-2'),
 
             dbc.InputGroup([
                 dbc.InputGroupText("Вероятность скрещивания"),
-                dbc.Input(id='genetic-crossover-prob-input', type='number', value=0.5)
+                dbc.Input(id='genetic-crossover-prob-input', type='number', value=0.7)
             ], className='mb-2'),
 
             dbc.InputGroup([
                 dbc.InputGroupText("Вероятность мутации"),
-                dbc.Input(id='genetic-mutation-prob-input', type='number', value=0.5)
+                dbc.Input(id='genetic-mutation-prob-input', type='number', value=0.1)
             ], className='mb-2'),
 
             dbc.InputGroup([
-                dbc.InputGroupText("Температура отжига"),
-                dbc.Input(id='genetic-temperature-input', type='number', value=100)
+                dbc.InputGroupText("Параметр мутации"),
+                dbc.Input(id='genetic-mutation-parameter-input', type='number', value=10)
             ], className='mb-2'),
 
             dbc.Checklist(
@@ -303,18 +303,18 @@ def update_plot_and_table_simplex(n_clicks, x0, y0, x12, x22, x1x2, x1, x2, a1, 
      State('genetic-y-max-input', 'value'),
      State('genetic-crossover-prob-input', 'value'),
      State('genetic-mutation-prob-input', 'value'),
-     State('genetic-temperature-input', 'value'),
+     State('genetic-mutation-parameter-input', 'value'),
      State('genetic-operations-checkboxes', 'value'),
      ],
     prevent_initial_call=True
 )
-def update_plot_and_table_genetic(n_clicks, func, chromosome_number, max_iter, x_min, x_max, y_min, y_max, crossover_prob, mutation_prob, temperature, operations):
+def update_plot_and_table_genetic(n_clicks, func, chromosome_number, max_iter, x_min, x_max, y_min, y_max, crossover_prob, mutation_prob, mutation_param, operations):
     func = genetic_algorithm.functions(func)
-    if None in [func, chromosome_number, max_iter, x_min, x_max, y_min, y_max, crossover_prob, mutation_prob, temperature, operations]:
-        print([func, chromosome_number, max_iter, x_min, x_max, y_min, y_max, crossover_prob, mutation_prob, temperature, operations])
+    if None in [func, chromosome_number, max_iter, x_min, x_max, y_min, y_max, crossover_prob, mutation_prob, mutation_param, operations]:
+        print([func, chromosome_number, max_iter, x_min, x_max, y_min, y_max, crossover_prob, mutation_prob, mutation_param, operations])
         return go.Figure(), "Пожалуйста, заполните все поля", "", "danger"
 
-    return update_plot_and_table("genetic", func, *genetic_algorithm.optimize(func, [[x_min, x_max], [y_min, y_max]], {"crossover": "crossover" in operations, "mutation": "mutation" in operations}, chromosome_number, crossover_prob, mutation_prob, 20, max_iter, temperature), {"bounds": [x_min, x_max, y_min, y_max]})
+    return update_plot_and_table("genetic", func, *genetic_algorithm.optimize(func, [[x_min, x_max], [y_min, y_max]], {"crossover": "crossover" in operations, "mutation": "mutation" in operations}, chromosome_number, crossover_prob, mutation_prob, mutation_param, max_iter), {"bounds": [x_min, x_max, y_min, y_max]})
 
 def update_plot_and_table(method, func, history, converged, status_message, options=None, optional_options=None):
     if history:
