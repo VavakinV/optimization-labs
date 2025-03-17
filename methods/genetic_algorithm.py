@@ -7,7 +7,7 @@ def functions(function_name):
             return lambda x, y: (1-x)**2 + 100*((y-x**2)**2)
 
 def optimize(objective_func, bounds, used_methods={"crossover": True, "mutation": True}, population_size=50, 
-             crossover_prob=0.8, mutation_prob=0.1, mutation_parameter=20,
+             crossover_prob=0.8, mutation_prob=0.1, mutation_parameter=50,
              max_iter=100, temperature=100, tol=1e-6, patience=25):
 
     # Инициализация параметров
@@ -53,6 +53,8 @@ def optimize(objective_func, bounds, used_methods={"crossover": True, "mutation"
             # Отбор (метод рулетки)
             parents = population[np.random.choice(
                 population_size, 2, p=fitness/fitness.sum(), replace=False)]
+            temporary_population.append(parents[0])
+            temporary_population.append(parents[1])
             
             # Скрещивание (метод BLX-α)
             if used_methods['crossover']:
@@ -91,7 +93,7 @@ def optimize(objective_func, bounds, used_methods={"crossover": True, "mutation"
             else:
                 new_population.append(indiv2)
 
-        population = np.array(new_population)[:population_size]
+        population = np.array(new_population)
 
     # Формирование результата
     converged = no_improve >= patience
