@@ -4,7 +4,8 @@ import plotly.graph_objs as go
 import numpy as np
 import dash_bootstrap_components as dbc
 
-from methods import gradient_descent, simplex_method, genetic_algorithm
+from methods import gradient_descent, simplex_method, genetic_algorithm, particle_swarm
+from functions import functions
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True, prevent_initial_callbacks='initial_duplicate')
 server = app.server
@@ -13,6 +14,7 @@ methods = {
     "Градиентный спуск": gradient_descent,
     "Симплекс-метод": simplex_method,
     "Генетический алгоритм": genetic_algorithm,
+    "Алгоритм роя частиц": particle_swarm
 }
 
 optimization_functions = {
@@ -239,6 +241,63 @@ def update_params(method_name):
 
             dbc.Button("Запустить", id='genetic-run-button', color='primary', className='mt-3')
         ])
+    elif method_name == "Алгоритм роя частиц":
+        return html.Div([
+            dbc.InputGroup([
+                dbc.InputGroupText("Функция"),
+                dcc.Dropdown(
+                        id="swarm-function-dropdown",
+                        options=[{"label": name, "value": optimization_functions[name]} for name in optimization_functions.keys()],
+                        value="rosenbrock",
+                        clearable=False,
+                        style={'width': '100%'}
+                    )
+            ], className='mb-2'),
+            
+            dbc.InputGroup([
+                dbc.InputGroupText("Размер роя"),
+                dbc.Input(id='swarm-size-input', type='number', value=100)
+            ], className='mb-2'),
+
+            dbc.InputGroup([
+                dbc.InputGroupText("Макс. итераций"),
+                dbc.Input(id='swarm-max-iter-input', type='number', value=100)
+            ], className='mb-2'),
+
+            dbc.InputGroup([
+                dbc.InputGroupText("Интервал поиска (x)"),
+                dbc.Input(id='swarm-x-min-input', type='number', value=-3, placeholder="Min x"),
+                dbc.Input(id='swarm-x-max-input', type='number', value=3, placeholder="Max x")
+            ], className='mb-2'),
+
+            dbc.InputGroup([
+                dbc.InputGroupText("Интервал поиска (y)"),
+                dbc.Input(id='swarm-y-min-input', type='number', value=-3, placeholder="Min y"),
+                dbc.Input(id='swarm-y-max-input', type='number', value=3, placeholder="Max y")
+            ], className='mb-2'),
+
+            dbc.InputGroup([
+                dbc.InputGroupText("Коэффициент k (должен быть в интервале (0, 1))"),
+                dbc.Input(id='swarm-velocity-input', type='number', value=0.5)
+            ], className='mb-2'),
+
+            dbc.InputGroup([
+                dbc.InputGroupText("Локальный коэффициент скорости φₚ"),
+                dbc.Input(id='swarm-local-velocity-input', type='number', value=2)
+            ], className='mb-2'),
+
+            dbc.InputGroup([
+                dbc.InputGroupText("Глобальный коэффициент скорости φ₉"),
+                dbc.Input(id='swarm-global-velocity-input', type='number', value=5)
+            ], className='mb-2'),
+
+            dbc.InputGroup([
+                dbc.InputGroupText("Коэффициент штрафа"),
+                dbc.Input(id='swarm-penalty-input', type='number', value=10000)
+            ], className='mb-2'),
+
+            dbc.Button("Запустить", id='swarm-run-button', color='primary', className='mt-3')
+        ])
     return html.Div()
 
 @app.callback(
@@ -313,12 +372,43 @@ def update_plot_and_table_simplex(n_clicks, x0, y0, x12, x22, x1x2, x1, x2, a1, 
     prevent_initial_call=True
 )
 def update_plot_and_table_genetic(n_clicks, func, chromosome_number, max_iter, x_min, x_max, y_min, y_max, crossover_prob, mutation_prob, mutation_param, operations):
-    func = genetic_algorithm.functions(func)
+    func = functions(func)
     if None in [func, chromosome_number, max_iter, x_min, x_max, y_min, y_max, crossover_prob, mutation_prob, mutation_param, operations]:
-        print([func, chromosome_number, max_iter, x_min, x_max, y_min, y_max, crossover_prob, mutation_prob, mutation_param, operations])
         return go.Figure(), "Пожалуйста, заполните все поля", "", "danger"
 
     return update_plot_and_table("genetic", func, *genetic_algorithm.optimize(func, [[x_min, x_max], [y_min, y_max]], {"crossover": "crossover" in operations, "mutation": "mutation" in operations}, chromosome_number, crossover_prob, mutation_prob, mutation_param, max_iter), {"bounds": [x_min, x_max, y_min, y_max]})
+
+
+@app.callback(
+    [Output('3d-plot', 'figure', allow_duplicate=True),
+     Output('results-table', 'children', allow_duplicate=True),
+     Output('final-result', 'children', allow_duplicate=True),
+     Output('final-result', 'color', allow_duplicate=True)],
+    [Input('swarm-run-button', 'n_clicks')],
+    [
+     State('swarm-function-dropdown', 'value'),
+     State('swarm-size-input', 'value'),
+     State('swarm-max-iter-input', 'value'),
+     State('swarm-x-min-input', 'value'),
+     State('swarm-x-max-input', 'value'),
+     State('swarm-y-min-input', 'value'),
+     State('swarm-y-max-input', 'value'),
+     State('swarm-velocity-input', 'value'),
+     State('swarm-local-velocity-input', 'value'),
+     State('swarm-global-velocity-input', 'value'),
+     State('swarm-penalty-input', 'value')
+     ],
+    prevent_initial_call=True
+)
+def update_plot_and_table_swarm(n_clicks, func, swarmsize, max_iter, x_min, x_max, y_min, y_max, velocity, local_velocity, global_velocity, penalty):
+    func = functions(func)
+    if None in [func, swarmsize, max_iter, x_min, x_max, y_min, y_max, velocity, local_velocity, global_velocity, penalty]:
+        return go.Figure(), "Пожалуйста, заполните все поля", "", "danger"
+    
+    if 0 >= velocity or velocity >= 1:
+        return go.Figure(), "Коэффициент k должен быть в диапазоне (0, 1)", "", "danger"
+
+    return update_plot_and_table("swarm", func, *particle_swarm.optimize(func, max_iter, swarmsize, [[x_min, y_min], [x_max, y_max]], velocity, local_velocity, global_velocity, penalty), {"bounds": [x_min, x_max, y_min, y_max]})
 
 def update_plot_and_table(method, func, history, converged, status_message, options=None, optional_options=None):
     if history:
@@ -341,7 +431,7 @@ def update_plot_and_table(method, func, history, converged, status_message, opti
     
     x = np.linspace(0, 20, 100)
     y = np.linspace(0, 20, 100)
-    if method == 'genetic':
+    if method == 'genetic' or method == 'swarm':
         x_min, x_max, y_min, y_max = options["bounds"]
         x = np.linspace(x_min, x_max, 100)
         y = np.linspace(y_min, y_max, 100)

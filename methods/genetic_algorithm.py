@@ -1,17 +1,5 @@
 import numpy as np
 
-def functions(function_name):
-    s = function_name.lower()
-    match s:
-        case "rosenbrock":
-            return lambda x, y: (1-x)**2 + 100*((y-x**2)**2)
-        case "bukin":
-            return lambda x, y: 100*np.sqrt(abs(y-0.01*(x**2))) + 0.01*abs(x+10)
-        case "himmelblau":
-            return lambda x, y: (x**2 + y -11)**2 + (x + y**2 - 7)**2
-        case "isom":
-            return lambda x, y: -np.cos(x)*np.cos(y)*np.exp(-((x-np.pi)**2 + (y-np.pi)**2))
-
 def optimize(objective_func, bounds, used_methods={"crossover": True, "mutation": True}, population_size=50, 
              crossover_prob=0.8, mutation_prob=0.1, mutation_parameter=3,
              max_iter=100, tol=1e-6, patience=25):
