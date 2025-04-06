@@ -4,7 +4,7 @@ import plotly.graph_objs as go
 import numpy as np
 import dash_bootstrap_components as dbc
 
-from methods import gradient_descent, simplex_method, genetic_algorithm, particle_swarm
+from methods import gradient_descent, simplex_method, genetic_algorithm, particle_swarm, bee
 from functions import functions
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True, prevent_initial_callbacks='initial_duplicate')
@@ -14,11 +14,13 @@ methods = {
     "Градиентный спуск": gradient_descent,
     "Симплекс-метод": simplex_method,
     "Генетический алгоритм": genetic_algorithm,
-    "Алгоритм роя частиц": particle_swarm
+    "Алгоритм роя частиц": particle_swarm,
+    "Пчелиный алгоритм": bee
 }
 
 optimization_functions = {
     "Функция Розенброка": "rosenbrock",
+    "Функция Растригина": "rastrigin",
     "Функция Букина N6": "bukin",
     "Функция Химмельблау": "himmelblau",
     "Функция Изома": "isom"
@@ -298,6 +300,71 @@ def update_params(method_name):
 
             dbc.Button("Запустить", id='swarm-run-button', color='primary', className='mt-3')
         ])
+    elif method_name == "Пчелиный алгоритм":
+        return html.Div([
+            dbc.InputGroup([
+                dbc.InputGroupText("Функция"),
+                dcc.Dropdown(
+                        id="bee-function-dropdown",
+                        options=[{"label": name, "value": optimization_functions[name]} for name in optimization_functions.keys()],
+                        value="rosenbrock",
+                        clearable=False,
+                        style={'width': '100%'}
+                    )
+            ], className='mb-2'),
+
+            dbc.InputGroup([
+                dbc.InputGroupText("Макс. итераций"),
+                dbc.Input(id='bee-max-iter-input', type='number', value=100)
+            ], className='mb-2'),
+
+            dbc.InputGroup([
+                dbc.InputGroupText("Кол-во пчёл-разведчиков"),
+                dbc.Input(id='bee-scoutbees-input', type='number', value=300)
+            ], className='mb-2'),
+
+            dbc.InputGroup([
+                dbc.InputGroupText("Кол-во пчёл на элитных участках"),
+                dbc.Input(id='bee-bestbees-input', type='number', value=50)
+            ], className='mb-2'),
+
+            dbc.InputGroup([
+                dbc.InputGroupText("Кол-во пчёл на перспективных участках"),
+                dbc.Input(id='bee-selbees-input', type='number', value=50)
+            ], className='mb-2'),
+
+            dbc.InputGroup([
+                dbc.InputGroupText("Кол-во элитных участков"),
+                dbc.Input(id='bee-bestsites-input', type='number', value=5)
+            ], className='mb-2'),
+
+            dbc.InputGroup([
+                dbc.InputGroupText("Кол-во перспективных участков"),
+                dbc.Input(id='bee-selsites-input', type='number', value=10)
+            ], className='mb-2'),
+
+            dbc.InputGroup([
+                dbc.InputGroupText("Радиус поиска"),
+                dbc.Input(id='bee-radius-input', type='number', value=5)
+            ], className='mb-2'),
+
+            dbc.InputGroup([
+                dbc.InputGroupText("Коэффициент изменения участков"),
+                dbc.Input(id='bee-koeff-input', type='number', value=0.9)
+            ], className='mb-2'),
+
+            dbc.InputGroup([
+                dbc.InputGroupText("Итераций стагнации до расширения участка"),
+                dbc.Input(id='bee-tolerance-input', type='number', value=5)
+            ], className='mb-2'),
+
+            dbc.InputGroup([
+                dbc.InputGroupText("Макс. расширений участка"),
+                dbc.Input(id='bee-globaltolerance-input', type='number', value=20)
+            ], className='mb-2'),
+
+            dbc.Button("Запустить", id='bee-run-button', color='primary', className='mt-3')
+        ])
     return html.Div()
 
 @app.callback(
@@ -410,15 +477,47 @@ def update_plot_and_table_swarm(n_clicks, func, swarmsize, max_iter, x_min, x_ma
 
     return update_plot_and_table("swarm", func, *particle_swarm.optimize(func, max_iter, swarmsize, [[x_min, y_min], [x_max, y_max]], velocity, local_velocity, global_velocity, penalty), {"bounds": [x_min, x_max, y_min, y_max]})
 
+@app.callback(
+    [Output('3d-plot', 'figure', allow_duplicate=True),
+     Output('results-table', 'children', allow_duplicate=True),
+     Output('final-result', 'children', allow_duplicate=True),
+     Output('final-result', 'color', allow_duplicate=True)],
+    [Input('bee-run-button', 'n_clicks')],
+    [
+     State('bee-function-dropdown', 'value'),
+     State('bee-max-iter-input', 'value'),
+     State('bee-scoutbees-input', 'value'),
+     State('bee-bestbees-input', 'value'),
+     State('bee-selbees-input', 'value'),
+     State('bee-bestsites-input', 'value'),
+     State('bee-selsites-input', 'value'),
+     State('bee-radius-input', 'value'),
+     State('bee-koeff-input', 'value'),
+     State('bee-tolerance-input', 'value'),
+     State('bee-globaltolerance-input', 'value'),
+     ],
+    prevent_initial_call=True
+)
+def update_plot_and_table_swarm(n_clicks, func, max_iter, scoutbees, bestbees, selbees, bestsites, selsites, radius, koeff, tolerance, globaltolerance):
+    func = functions(func)
+    if None in [func, max_iter, scoutbees, bestbees, selbees, bestsites, selsites, radius, koeff, tolerance, globaltolerance]:
+        return go.Figure(), "Пожалуйста, заполните все поля", "", "danger"
+    
+    if 0 >= koeff or koeff > 1:
+        return go.Figure(), "Коэффициент изменения участков должен быть в диапазоне (0, 1]", "", "danger"
+
+    return update_plot_and_table("bee", func, *bee.optimize(func, max_iter, scoutbees, selbees, bestbees, bestsites, selsites, [radius]*2, koeff, tolerance, globaltolerance), {"bounds": [-radius, radius, -radius, radius]})
+
+
 def update_plot_and_table(method, func, history, converged, status_message, options=None, optional_options=None):
     if history:
         final = history[-1]
         result_message = [
             html.Strong("Результаты оптимизации:"),
             html.Br(),
-            f"Финальная точка: ({round(final['x'], 4)}, {round(final['y'], 4)})",
+            f"Финальная точка: ({round(final['x'], 5)}, {round(final['y'], 5)})",
             html.Br(),
-            f"Значение функции: {round(final['f_value'], 4)}",
+            f"Значение функции: {round(final['f_value'], 5)}",
             html.Br(),
             f"Итераций выполнено: {final['iteration']}",
             html.Br(),
@@ -431,7 +530,7 @@ def update_plot_and_table(method, func, history, converged, status_message, opti
     
     x = np.linspace(0, 20, 100)
     y = np.linspace(0, 20, 100)
-    if method == 'genetic' or method == 'swarm':
+    if method in ['genetic', 'swarm', 'bee']:
         x_min, x_max, y_min, y_max = options["bounds"]
         x = np.linspace(x_min, x_max, 100)
         y = np.linspace(y_min, y_max, 100)
@@ -486,9 +585,9 @@ def update_plot_and_table(method, func, history, converged, status_message, opti
     formatted_history = [
         {
             'iteration': item['iteration'],
-            'x': round(item['x'], 4),
-            'y': round(item['y'], 4),
-            'f_value': round(item['f_value'], 4),
+            'x': round(item['x'], 5),
+            'y': round(item['y'], 5),
+            'f_value': round(item['f_value'], 5),
             
         }
         for item in history
@@ -497,7 +596,7 @@ def update_plot_and_table(method, func, history, converged, status_message, opti
     if method == 'gradient':
         columns.append({'name': 'Норма градиента', 'id': 'grad_norm'})
         formatted_optional_history = [{
-                'grad_norm': round(item['grad_norm'], 4)
+                'grad_norm': round(item['grad_norm'], 5)
             }
             for item in options['optional_history']
         ]

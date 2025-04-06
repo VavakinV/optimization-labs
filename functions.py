@@ -11,3 +11,5 @@ def functions(function_name):
             return lambda x, y: (x**2 + y -11)**2 + (x + y**2 - 7)**2
         case "isom":
             return lambda x, y: -np.cos(x)*np.cos(y)*np.exp(-((x-np.pi)**2 + (y-np.pi)**2))
+        case "rastrigin":
+            return lambda x, y: 20 + (x**2 - 10*np.cos(2*np.pi*x)) + (y**2 - 10*np.cos(2*np.pi*y))
