@@ -320,17 +320,17 @@ def update_params(method_name):
 
             dbc.InputGroup([
                 dbc.InputGroupText("Кол-во пчёл-разведчиков"),
-                dbc.Input(id='bee-scoutbees-input', type='number', value=300)
+                dbc.Input(id='bee-scoutbees-input', type='number', value=100)
             ], className='mb-2'),
 
             dbc.InputGroup([
                 dbc.InputGroupText("Кол-во пчёл на элитных участках"),
-                dbc.Input(id='bee-bestbees-input', type='number', value=50)
+                dbc.Input(id='bee-bestbees-input', type='number', value=100)
             ], className='mb-2'),
 
             dbc.InputGroup([
                 dbc.InputGroupText("Кол-во пчёл на перспективных участках"),
-                dbc.Input(id='bee-selbees-input', type='number', value=50)
+                dbc.Input(id='bee-selbees-input', type='number', value=100)
             ], className='mb-2'),
 
             dbc.InputGroup([
@@ -350,7 +350,7 @@ def update_params(method_name):
 
             dbc.InputGroup([
                 dbc.InputGroupText("Коэффициент изменения участков"),
-                dbc.Input(id='bee-koeff-input', type='number', value=0.9)
+                dbc.Input(id='bee-koeff-input', type='number', value=0.2)
             ], className='mb-2'),
 
             dbc.InputGroup([
@@ -360,7 +360,7 @@ def update_params(method_name):
 
             dbc.InputGroup([
                 dbc.InputGroupText("Макс. расширений участка"),
-                dbc.Input(id='bee-globaltolerance-input', type='number', value=20)
+                dbc.Input(id='bee-globaltolerance-input', type='number', value=10)
             ], className='mb-2'),
 
             dbc.Button("Запустить", id='bee-run-button', color='primary', className='mt-3')

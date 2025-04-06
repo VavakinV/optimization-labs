@@ -22,8 +22,8 @@ class Bee:
         for bee in bee_list:
             bee.calcFitness()
             pos = bee.getPosition()
-            for n in range(len(self.position)):
-                if abs(self.position[n] - pos[n]) > range_list[n]:
+            for i in range(2):
+                if abs(self.position[i] - pos[i]) > range_list[i]:
                     return True
                 
         return False
@@ -39,7 +39,7 @@ class Bee:
         self.calcFitness()
 
     def gotorandom(self):
-        self.position = [random.uniform(self.minval[n], self.maxval[n]) for n in range(len(self.position))]
+        self.position = [random.uniform(self.minval[i], self.maxval[i]) for i in range(2)]
 
         self.checkPosition()
 
@@ -91,7 +91,6 @@ class Hive:
         return index 
     
     def nextIteration(self):
-        # Пересчитываем fitness для всех пчел перед сортировкой
         for bee in self.swarm:
             bee.calcFitness()
         
@@ -102,7 +101,6 @@ class Hive:
         self.bestsites = [self.swarm[0]]
         self.selectedsites = []
 
-        # Выбираем best sites
         curr_index = 1
         while curr_index < len(self.swarm) and len(self.bestsites) < self.bestsites_count:
             bee = self.swarm[curr_index]
@@ -110,36 +108,22 @@ class Hive:
                 self.bestsites.append(bee)
             curr_index += 1
 
-        # Выбираем selected sites
         while curr_index < len(self.swarm) and len(self.selectedsites) < self.selectedsites_count:
             bee = self.swarm[curr_index]
             if bee.otherPatch(self.bestsites, self.radius) and bee.otherPatch(self.selectedsites, self.radius):
                 self.selectedsites.append(bee)
             curr_index += 1
 
-        # Отправляем пчел
-        bee_index = len(self.bestsites) + len(self.selectedsites)
+        bee_index = 1
         
-        # Лучшие участки
         for best_bee in self.bestsites:
-            for _ in range(self.bestbee_count):
-                if bee_index >= len(self.swarm):
-                    break
-                self.swarm[bee_index].goto(best_bee.getPosition(), self.radius)
-                bee_index += 1
+            bee_index = self.sendBees(best_bee.getPosition(), bee_index, self.bestbee_count)
 
-        # Выбранные участки
         for sel_bee in self.selectedsites:
-            for _ in range(self.selectedbee_count):
-                if bee_index >= len(self.swarm):
-                    break
-                self.swarm[bee_index].goto(sel_bee.getPosition(), self.radius)
-                bee_index += 1
+            bee_index = self.sendBees(sel_bee.getPosition(), bee_index, self.selectedbee_count)
 
-        # Остальные - разведчики
-        while bee_index < len(self.swarm):
-            self.swarm[bee_index].gotorandom()
-            bee_index += 1     
+        for bee in self.swarm[bee_index:-1]:
+            bee.gotorandom()  
 
 def optimize(func, maxiter, scoutbee_count, selectedbee_count, bestbee_count, bestsites_count, selectedsites_count, radius, koeff, tolerance, globaltolerance):
     history = []
