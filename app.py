@@ -319,18 +319,30 @@ def update_params(method_name):
             ], className='mb-2'),
 
             dbc.InputGroup([
+                dbc.InputGroupText("Интервал поиска (x)"),
+                dbc.Input(id='bee-x-min-input', type='number', value=-5, placeholder="Min x"),
+                dbc.Input(id='bee-x-max-input', type='number', value=5, placeholder="Max x")
+            ], className='mb-2'),
+
+            dbc.InputGroup([
+                dbc.InputGroupText("Интервал поиска (y)"),
+                dbc.Input(id='bee-y-min-input', type='number', value=-5, placeholder="Min y"),
+                dbc.Input(id='bee-y-max-input', type='number', value=5, placeholder="Max y")
+            ], className='mb-2'),
+
+            dbc.InputGroup([
                 dbc.InputGroupText("Кол-во пчёл-разведчиков"),
                 dbc.Input(id='bee-scoutbees-input', type='number', value=100)
             ], className='mb-2'),
 
             dbc.InputGroup([
                 dbc.InputGroupText("Кол-во пчёл на элитных участках"),
-                dbc.Input(id='bee-bestbees-input', type='number', value=100)
+                dbc.Input(id='bee-bestbees-input', type='number', value=50)
             ], className='mb-2'),
 
             dbc.InputGroup([
                 dbc.InputGroupText("Кол-во пчёл на перспективных участках"),
-                dbc.Input(id='bee-selbees-input', type='number', value=100)
+                dbc.Input(id='bee-selbees-input', type='number', value=10)
             ], className='mb-2'),
 
             dbc.InputGroup([
@@ -340,12 +352,12 @@ def update_params(method_name):
 
             dbc.InputGroup([
                 dbc.InputGroupText("Кол-во перспективных участков"),
-                dbc.Input(id='bee-selsites-input', type='number', value=10)
+                dbc.Input(id='bee-selsites-input', type='number', value=5)
             ], className='mb-2'),
 
             dbc.InputGroup([
                 dbc.InputGroupText("Радиус поиска"),
-                dbc.Input(id='bee-radius-input', type='number', value=5)
+                dbc.Input(id='bee-radius-input', type='number', value=0.5)
             ], className='mb-2'),
 
             dbc.InputGroup([
@@ -486,6 +498,10 @@ def update_plot_and_table_swarm(n_clicks, func, swarmsize, max_iter, x_min, x_ma
     [
      State('bee-function-dropdown', 'value'),
      State('bee-max-iter-input', 'value'),
+     State('bee-x-min-input', 'value'),
+     State('bee-x-max-input', 'value'),
+     State('bee-y-min-input', 'value'),
+     State('bee-y-max-input', 'value'),
      State('bee-scoutbees-input', 'value'),
      State('bee-bestbees-input', 'value'),
      State('bee-selbees-input', 'value'),
@@ -498,15 +514,15 @@ def update_plot_and_table_swarm(n_clicks, func, swarmsize, max_iter, x_min, x_ma
      ],
     prevent_initial_call=True
 )
-def update_plot_and_table_swarm(n_clicks, func, max_iter, scoutbees, bestbees, selbees, bestsites, selsites, radius, koeff, tolerance, globaltolerance):
+def update_plot_and_table_swarm(n_clicks, func, max_iter, x_min, x_max, y_min, y_max, scoutbees, bestbees, selbees, bestsites, selsites, radius, koeff, tolerance, globaltolerance):
     func = functions(func)
-    if None in [func, max_iter, scoutbees, bestbees, selbees, bestsites, selsites, radius, koeff, tolerance, globaltolerance]:
+    if None in [func, max_iter, x_min, x_max, y_min, y_max, scoutbees, bestbees, selbees, bestsites, selsites, radius, koeff, tolerance, globaltolerance]:
         return go.Figure(), "Пожалуйста, заполните все поля", "", "danger"
     
     if 0 >= koeff or koeff > 1:
         return go.Figure(), "Коэффициент изменения участков должен быть в диапазоне (0, 1]", "", "danger"
 
-    return update_plot_and_table("bee", func, *bee.optimize(func, max_iter, scoutbees, selbees, bestbees, bestsites, selsites, [radius]*2, koeff, tolerance, globaltolerance), {"bounds": [-radius, radius, -radius, radius]})
+    return update_plot_and_table("bee", func, *bee.optimize(func, max_iter, scoutbees, selbees, bestbees, bestsites, selsites, radius, koeff, tolerance, globaltolerance, x_min, x_max, y_min, y_max), {"bounds": [x_min, x_max, y_min, y_max]})
 
 
 def update_plot_and_table(method, func, history, converged, status_message, options=None, optional_options=None):

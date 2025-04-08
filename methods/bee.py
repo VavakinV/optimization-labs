@@ -1,9 +1,9 @@
 import random, math
 
 class Bee:
-    def __init__(self, func, radius):
-        self.minval = [-x for x in radius]
-        self.maxval = [x for x in radius]
+    def __init__(self, func, x_min, x_max, y_min, y_max):
+        self.minval = [x_min, y_min]
+        self.maxval = [x_max, y_max]
 
         self.position = [random.uniform(self.minval[i], self.maxval[i]) for i in range(2)]
 
@@ -14,7 +14,7 @@ class Bee:
     def calcFitness(self):
         self.fitness = self.func(*self.position)
 
-    def otherPatch(self, bee_list, range_list):
+    def otherPatch(self, bee_list, radius):
         if len(bee_list) == 0:
             return True
         
@@ -23,7 +23,7 @@ class Bee:
             bee.calcFitness()
             pos = bee.getPosition()
             for i in range(2):
-                if abs(self.position[i] - pos[i]) > range_list[i]:
+                if abs(self.position[i] - pos[i]) > radius:
                     return True
                 
         return False
@@ -31,8 +31,8 @@ class Bee:
     def getPosition(self):
         return [val for val in self.position]
     
-    def goto(self, otherpos, range_list):
-        self.position = [otherpos[n] + random.uniform(-range_list[n], range_list[n]) for n in range(len(otherpos))]
+    def goto(self, otherpos, radius):
+        self.position = [otherpos[n] + random.uniform(-radius, radius) for n in range(len(otherpos))]
 
         self.checkPosition()
 
@@ -54,7 +54,7 @@ class Bee:
                 self.position[n] = self.maxval[n]
 
 class Hive:
-    def __init__(self, scoutbee_count, selectedbee_count, bestbee_count, selectedsites_count, bestsites_count, radius, func):
+    def __init__(self, scoutbee_count, selectedbee_count, bestbee_count, selectedsites_count, bestsites_count, radius, func, x_min, x_max, y_min, y_max):
         self.scoutbee_count = scoutbee_count
         self.selectedbee_count = selectedbee_count
         self.bestbee_count = bestbee_count
@@ -68,7 +68,7 @@ class Hive:
         self.best_fitness = math.inf
 
         bee_count = scoutbee_count + selectedbee_count * selectedsites_count + bestbee_count * bestsites_count
-        self.swarm = [Bee(func, radius) for _ in range(bee_count)]
+        self.swarm = [Bee(func, x_min, x_max, y_min, y_max) for _ in range(bee_count)]
 
         self.bestsites = []
         self.selectedsites = []
@@ -125,9 +125,9 @@ class Hive:
         for bee in self.swarm[bee_index:-1]:
             bee.gotorandom()  
 
-def optimize(func, maxiter, scoutbee_count, selectedbee_count, bestbee_count, bestsites_count, selectedsites_count, radius, koeff, tolerance, globaltolerance):
+def optimize(func, maxiter, scoutbee_count, selectedbee_count, bestbee_count, bestsites_count, selectedsites_count, radius, koeff, tolerance, globaltolerance, x_min, x_max, y_min, y_max):
     history = []
-    hive = Hive(scoutbee_count, selectedbee_count, bestbee_count, selectedsites_count, bestsites_count, radius, func)
+    hive = Hive(scoutbee_count, selectedbee_count, bestbee_count, selectedsites_count, bestsites_count, radius, func, x_min, x_max, y_min, y_max)
 
     best_value = math.inf
     tolerance_counter = 0
@@ -139,12 +139,12 @@ def optimize(func, maxiter, scoutbee_count, selectedbee_count, bestbee_count, be
 
         if abs(hive.best_fitness - best_value) > 1e-5:
             best_value = hive.best_fitness
-            hive.radius = [hive.radius[i] * koeff for i in range(len(hive.radius))]
+            hive.radius = hive.radius * koeff
             tolerance_counter = 0
         else:
             tolerance_counter += 1
             if tolerance_counter >= tolerance:
-                hive.radius = [hive.radius[i] / koeff for i in range(len(hive.radius))]
+                hive.radius = hive.radius / koeff
                 tolerance_counter = 0
                 globaltolerance -= 1
                 if globaltolerance == 0:
