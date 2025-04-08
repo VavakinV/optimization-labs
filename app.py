@@ -23,7 +23,9 @@ optimization_functions = {
     "Функция Растригина": "rastrigin",
     "Функция Букина N6": "bukin",
     "Функция Химмельблау": "himmelblau",
-    "Функция Изома": "isom"
+    "Функция Изома": "isom",
+    "Функция Гольдшейна-Прайса": "goldstein_price",
+    "Функция 'Крест на подносе'": "cross_in_tray"
 }
 
 app.layout = dbc.Container([
