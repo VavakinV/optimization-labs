@@ -4,7 +4,7 @@ import plotly.graph_objs as go
 import numpy as np
 import dash_bootstrap_components as dbc
 
-from methods import gradient_descent, simplex_method, genetic_algorithm, particle_swarm, bee
+from methods import gradient_descent, simplex_method, genetic_algorithm, particle_swarm, bee, immune
 from functions import functions
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True, prevent_initial_callbacks='initial_duplicate')
@@ -15,7 +15,8 @@ methods = {
     "Симплекс-метод": simplex_method,
     "Генетический алгоритм": genetic_algorithm,
     "Алгоритм роя частиц": particle_swarm,
-    "Пчелиный алгоритм": bee
+    "Пчелиный алгоритм": bee,
+    "Искусственная иммунная сеть": immune,
 }
 
 optimization_functions = {
@@ -379,6 +380,68 @@ def update_params(method_name):
 
             dbc.Button("Запустить", id='bee-run-button', color='primary', className='mt-3')
         ])
+    elif method_name == "Искусственная иммунная сеть":
+        return html.Div([
+            dbc.InputGroup([
+                dbc.InputGroupText("Функция"),
+                dcc.Dropdown(
+                        id="immune-function-dropdown",
+                        options=[{"label": name, "value": optimization_functions[name]} for name in optimization_functions.keys()],
+                        value="rosenbrock",
+                        clearable=False,
+                        style={'width': '100%'}
+                    )
+            ], className='mb-2'),
+
+            dbc.InputGroup([
+                dbc.InputGroupText("Макс. итераций"),
+                dbc.Input(id='immune-max-iter-input', type='number', value=10000)
+            ], className='mb-2'),
+
+            dbc.InputGroup([
+                dbc.InputGroupText("Кол-во антител"),
+                dbc.Input(id='immune-population-input', type='number', value=50)
+            ], className='mb-2'),
+
+            dbc.InputGroup([
+                dbc.InputGroupText("Интервал поиска (x)"),
+                dbc.Input(id='immune-x-min-input', type='number', value=-5, placeholder="Min x"),
+                dbc.Input(id='immune-x-max-input', type='number', value=5, placeholder="Max x")
+            ], className='mb-2'),
+
+            dbc.InputGroup([
+                dbc.InputGroupText("Интервал поиска (y)"),
+                dbc.Input(id='immune-y-min-input', type='number', value=-5, placeholder="Min y"),
+                dbc.Input(id='immune-y-max-input', type='number', value=5, placeholder="Max y")
+            ], className='mb-2'),
+
+            dbc.InputGroup([
+                dbc.InputGroupText("Кол-во лучших антител"),
+                dbc.Input(id='immune-nb-input', type='number', value=10)
+            ], className='mb-2'),
+
+            dbc.InputGroup([
+                dbc.InputGroupText("Кол-во клонов каждого лучшего антитела"),
+                dbc.Input(id='immune-nc-input', type='number', value=3)
+            ], className='mb-2'),
+
+            dbc.InputGroup([
+                dbc.InputGroupText("Кол-во лучших клонов, оставляемых после мутации"),
+                dbc.Input(id='immune-nd-input', type='number', value=5)
+            ], className='mb-2'),
+
+            dbc.InputGroup([
+                dbc.InputGroupText("Коэффициент мутации"),
+                dbc.Input(id='immune-mutation-input', type='number', value=0.1)
+            ], className='mb-2'),
+
+            dbc.InputGroup([
+                dbc.InputGroupText("Макс. итераций без улучшения"),
+                dbc.Input(id='immune-tolerance-steps-input', type='number', value=100)
+            ], className='mb-2'),
+
+            dbc.Button("Запустить", id='immune-run-button', color='primary', className='mt-3')
+        ])
     return html.Div()
 
 @app.callback(
@@ -516,7 +579,7 @@ def update_plot_and_table_swarm(n_clicks, func, swarmsize, max_iter, x_min, x_ma
      ],
     prevent_initial_call=True
 )
-def update_plot_and_table_swarm(n_clicks, func, max_iter, x_min, x_max, y_min, y_max, scoutbees, bestbees, selbees, bestsites, selsites, radius, koeff, tolerance, globaltolerance):
+def update_plot_and_table_bee(n_clicks, func, max_iter, x_min, x_max, y_min, y_max, scoutbees, bestbees, selbees, bestsites, selsites, radius, koeff, tolerance, globaltolerance):
     func = functions(func)
     if None in [func, max_iter, x_min, x_max, y_min, y_max, scoutbees, bestbees, selbees, bestsites, selsites, radius, koeff, tolerance, globaltolerance]:
         return go.Figure(), "Пожалуйста, заполните все поля", "", "danger"
@@ -525,6 +588,35 @@ def update_plot_and_table_swarm(n_clicks, func, max_iter, x_min, x_max, y_min, y
         return go.Figure(), "Коэффициент изменения участков должен быть в диапазоне (0, 1]", "", "danger"
 
     return update_plot_and_table("bee", func, *bee.optimize(func, max_iter, scoutbees, selbees, bestbees, bestsites, selsites, radius, koeff, tolerance, globaltolerance, x_min, x_max, y_min, y_max), {"bounds": [x_min, x_max, y_min, y_max]})
+
+@app.callback(
+    [Output('3d-plot', 'figure', allow_duplicate=True),
+     Output('results-table', 'children', allow_duplicate=True),
+     Output('final-result', 'children', allow_duplicate=True),
+     Output('final-result', 'color', allow_duplicate=True)],
+    [Input('immune-run-button', 'n_clicks')],
+    [
+     State('immune-function-dropdown', 'value'),
+     State('immune-max-iter-input', 'value'),
+     State('immune-population-input', 'value'),
+     State('immune-x-min-input', 'value'),
+     State('immune-x-max-input', 'value'),
+     State('immune-y-min-input', 'value'),
+     State('immune-y-max-input', 'value'),
+     State('immune-nb-input', 'value'),
+     State('immune-nc-input', 'value'),
+     State('immune-nd-input', 'value'),
+     State('immune-mutation-input', 'value'),
+     State('immune-tolerance-steps-input', 'value'),
+     ],
+    prevent_initial_call=True
+)
+def update_plot_and_table_immune(n_clicks, func, max_iter, population, x_min, x_max, y_min, y_max, nb, nc, nd, mutation, tolerance_steps):
+    func = functions(func)
+    if None in [func, max_iter, population, x_min, x_max, y_min, y_max, nb, nc, nd, mutation, tolerance_steps]:
+        return go.Figure(), "Пожалуйста, заполните все поля", "", "danger"
+
+    return update_plot_and_table("immune", func, *immune.optimize(func, max_iter, population, x_min, x_max, y_min, y_max, nb, nc, nd, mutation, tolerance_steps), {"bounds": [x_min, x_max, y_min, y_max]})
 
 
 def update_plot_and_table(method, func, history, converged, status_message, options=None, optional_options=None):
@@ -548,7 +640,7 @@ def update_plot_and_table(method, func, history, converged, status_message, opti
     
     x = np.linspace(0, 20, 100)
     y = np.linspace(0, 20, 100)
-    if method in ['genetic', 'swarm', 'bee']:
+    if method in ['genetic', 'swarm', 'bee', 'immune']:
         x_min, x_max, y_min, y_max = options["bounds"]
         x = np.linspace(x_min, x_max, 100)
         y = np.linspace(y_min, y_max, 100)
