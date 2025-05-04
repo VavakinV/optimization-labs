@@ -4,7 +4,7 @@ import plotly.graph_objs as go
 import numpy as np
 import dash_bootstrap_components as dbc
 
-from methods import gradient_descent, simplex_method, genetic_algorithm, particle_swarm, bee, immune
+from methods import gradient_descent, simplex_method, genetic_algorithm, particle_swarm, bee, immune, bacterial
 from functions import functions
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True, prevent_initial_callbacks='initial_duplicate')
@@ -17,6 +17,7 @@ methods = {
     "Алгоритм роя частиц": particle_swarm,
     "Пчелиный алгоритм": bee,
     "Искусственная иммунная сеть": immune,
+    "Бактериальная оптимизация": bacterial
 }
 
 optimization_functions = {
@@ -26,7 +27,8 @@ optimization_functions = {
     "Функция Химмельблау": "himmelblau",
     "Функция Изома": "isom",
     "Функция Гольдшейна-Прайса": "goldstein_price",
-    "Функция 'Крест на подносе'": "cross_in_tray"
+    "Функция 'Крест на подносе'": "cross_in_tray",
+    "Функция сферы": "sphere"
 }
 
 app.layout = dbc.Container([
@@ -442,6 +444,73 @@ def update_params(method_name):
 
             dbc.Button("Запустить", id='immune-run-button', color='primary', className='mt-3')
         ])
+    elif method_name == "Бактериальная оптимизация":
+        return html.Div([
+            dbc.InputGroup([
+                dbc.InputGroupText("Функция"),
+                dcc.Dropdown(
+                        id="bacterial-function-dropdown",
+                        options=[{"label": name, "value": optimization_functions[name]} for name in optimization_functions.keys()],
+                        value="sphere",
+                        clearable=False,
+                        style={'width': '100%'}
+                    )
+            ], className='mb-2'),
+
+            dbc.InputGroup([
+                dbc.InputGroupText("Макс. итераций (кол-во хемотаксисов)"),
+                dbc.Input(id='bacterial-chemotaxis-input', type='number', value=100)
+            ], className='mb-2'),
+
+            dbc.InputGroup([
+                dbc.InputGroupText("Кол-во бактерий"),
+                dbc.Input(id='bacterial-population-input', type='number', value=100)
+            ], className='mb-2'),
+
+            dbc.InputGroup([
+                dbc.InputGroupText("Интервал поиска (x)"),
+                dbc.Input(id='bacterial-x-min-input', type='number', value=-5, placeholder="Min x"),
+                dbc.Input(id='bacterial-x-max-input', type='number', value=5, placeholder="Max x")
+            ], className='mb-2'),
+
+            dbc.InputGroup([
+                dbc.InputGroupText("Интервал поиска (y)"),
+                dbc.Input(id='bacterial-y-min-input', type='number', value=-5, placeholder="Min y"),
+                dbc.Input(id='bacterial-y-max-input', type='number', value=5, placeholder="Max y")
+            ], className='mb-2'),
+
+            dbc.InputGroup([
+                dbc.InputGroupText("Кол-во репродукций"),
+                dbc.Input(id='bacterial-reproductions-input', type='number', value=100)
+            ], className='mb-2'),
+
+            dbc.InputGroup([
+                dbc.InputGroupText("Кол-во ликвидаций и рассеиваний"),
+                dbc.Input(id='bacterial-eliminations-input', type='number', value=50)
+            ], className='mb-2'),
+
+            dbc.InputGroup([
+                dbc.InputGroupText("Шаг хемотаксиса"),
+                dbc.Input(id='bacterial-chemstep-input', type='number', value=0.1)
+            ], className='mb-2'),
+
+            dbc.InputGroup([
+                dbc.InputGroupText("Порог шагов до ликвидации"),
+                dbc.Input(id='bacterial-threshold-input', type='number', value=30)
+            ], className='mb-2'),
+
+            dbc.InputGroup([
+                dbc.InputGroupText("Вероятность ликвидации"),
+                dbc.Input(id='bacterial-elimination-probability-input', type='number', value=0.25)
+            ], className='mb-2'),
+
+            dbc.InputGroup([
+                dbc.InputGroupText("Кол-во ликвидируемых бактерий"),
+                dbc.Input(id='bacterial-elimination-count-input', type='number', value=3)
+            ], className='mb-2'),
+
+            dbc.Button("Запустить", id='bacterial-run-button', color='primary', className='mt-3')
+        ])
     return html.Div()
 
 @app.callback(
@@ -618,6 +687,48 @@ def update_plot_and_table_immune(n_clicks, func, max_iter, population, x_min, x_
 
     return update_plot_and_table("immune", func, *immune.optimize(func, max_iter, population, x_min, x_max, y_min, y_max, nb, nc, nd, mutation, tolerance_steps), {"bounds": [x_min, x_max, y_min, y_max]})
 
+@app.callback(
+    [Output('3d-plot', 'figure', allow_duplicate=True),
+     Output('results-table', 'children', allow_duplicate=True),
+     Output('final-result', 'children', allow_duplicate=True),
+     Output('final-result', 'color', allow_duplicate=True)],
+    [Input('bacterial-run-button', 'n_clicks')],
+    [
+     State('bacterial-function-dropdown', 'value'),
+     State('bacterial-x-min-input', 'value'),
+     State('bacterial-x-max-input', 'value'),
+     State('bacterial-y-min-input', 'value'),
+     State('bacterial-y-max-input', 'value'),
+     State('bacterial-population-input', 'value'),
+     State('bacterial-chemotaxis-input', 'value'),
+     State('bacterial-reproductions-input', 'value'),
+     State('bacterial-eliminations-input', 'value'),
+     State('bacterial-chemstep-input', 'value'),
+     State('bacterial-threshold-input', 'value'),
+     State('bacterial-elimination-probability-input', 'value'),
+     State('bacterial-elimination-count-input', 'value'),
+     ],
+    prevent_initial_call=True
+)
+def update_plot_and_table_immune(n_clicks, func, x_min, x_max, y_min, y_max, population_count, n_chemotaxis, n_reproduction, n_elimination, chemotaxis_step, elimination_threshold, elimination_probabilty, elimination_count):
+    func = functions(func)
+    if None in [func, x_min, x_max, y_min, y_max, population_count, n_chemotaxis, n_reproduction, n_elimination, chemotaxis_step, elimination_threshold, elimination_probabilty, elimination_count]:
+        return go.Figure(), "Пожалуйста, заполните все поля", "", "danger"
+    
+    if (population_count % 2) == 1:
+        return go.Figure(), "Количество бактерий в популяции должно быть чётным", "", "danger"
+
+    if (n_reproduction > n_chemotaxis) or (n_elimination > n_chemotaxis):
+        return go.Figure(), "Количество репродукций и ликвидаций должно быть не больше общего кол-ва итераций", "", "danger"
+    
+    if (elimination_probabilty < 0) or (elimination_probabilty > 1):
+        return go.Figure(), "Вероятность ликвидации должна быть в диапазоне [0;1]", "", "danger"
+    
+    if elimination_count > population_count:
+        return go.Figure(), "Кол-во ликвидируемых бактерий не должно превышать общий размер популяции", "", "danger"
+
+    return update_plot_and_table("bacterial", func, *bacterial.optimize(func, x_min, x_max, y_min, y_max, population_count, n_chemotaxis, n_reproduction, n_elimination, chemotaxis_step, elimination_threshold, elimination_probabilty, elimination_count), {"bounds": [x_min, x_max, y_min, y_max]})
+
 
 def update_plot_and_table(method, func, history, converged, status_message, options=None, optional_options=None):
     if history:
@@ -640,7 +751,7 @@ def update_plot_and_table(method, func, history, converged, status_message, opti
     
     x = np.linspace(0, 20, 100)
     y = np.linspace(0, 20, 100)
-    if method in ['genetic', 'swarm', 'bee', 'immune']:
+    if method in ['genetic', 'swarm', 'bee', 'immune', 'bacterial']:
         x_min, x_max, y_min, y_max = options["bounds"]
         x = np.linspace(x_min, x_max, 100)
         y = np.linspace(y_min, y_max, 100)

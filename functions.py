@@ -17,3 +17,5 @@ def functions(function_name):
             return lambda x, y: (1 + ((x+y+1)**2)*(19-14*x+3*(x**2)-14*y+6*x*y+3*(y**2)))*(30 + ((2*x-3*y)**2)*(18-32*x+12*(x**2)+48*y-36*x*y+27*(y**2)))
         case "cross_in_tray":
             return lambda x, y: -0.0001 * ((abs(np.sin(x)*np.sin(y)*np.exp(abs(100 - (np.sqrt(x**2+y**2)/np.pi)))) + 1)**0.1)
+        case "sphere":
+            return lambda x, y: x**2 + y**2

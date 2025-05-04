@@ -160,6 +160,6 @@ def optimize(func, maxiter, scoutbee_count, selectedbee_count, bestbee_count, be
         })
 
     converged = True
-    message = "Оптимум найден" if converged else "Достигнуто максимальное количество итераций"
+    message = "Оптимум найден"
     
     return history, converged, message
